@@ -1,0 +1,114 @@
+_  = require 'underscore'
+op = require 'operator'
+ko = require 'knockout'
+moment = require 'moment'
+
+{ IndexIterator, STOP_ITERATION, CONTINUE,
+} = require '../../../util/iterator'
+
+{ GraphNodeData,
+} = require '../graph-node-data'
+{ ChildNode,
+} = require '../child-node'
+Trait = require '../graph-node-trait'
+
+
+
+/**
+ * @class
+ * @extends GraphNodeData
+ */
+class exports.IndexedNodeData extends GraphNodeData
+    @registerType 'indexed'
+    
+    defaults: ->
+        startIndexingAt: 0
+    
+    attributeTypes: ->
+    
+    -> super ...
+
+
+
+/**
+ * @class
+ * @extends GraphNode
+ */
+class exports.IndexedNode extends ChildNode
+    @registerType 'indexed'
+    traits : [
+        Trait.SECTION
+        Trait.META_NODE
+        Trait.HTML
+        Trait.LEAF
+    ]
+    tagName  : 'section'
+    template : 'indexed-node'
+    
+    
+    /**
+     * @type PercentChangeIterator
+     */
+    transform : null
+    
+    
+    ->
+        super ...
+        @indexedNodes()
+    
+    
+    nodes: @computed ->
+        @root().filterTraits [Trait.VIS_NODE, Trait.REQUIRES_METRIC]
+    
+    
+    indexedNodes: @computedRequires 'nodes', (nodes) ->
+        nodes
+            .filter (node) ->
+                not (node.get('disabled') or node.options()?.get('noLegend'))
+            .map (node) ~>
+                transforms = node.metric().transforms()
+                transform = new PercentChangeIterator node.metric().data(), @startIndexingAt
+                unless _.contains transforms, transform
+                    node.metric().transforms.push transform
+                node
+    
+    
+
+
+/**
+ * @class PercentChangeIterator changes values to percentages of a reference point
+ * @extends IndexIterator
+ */
+class exports.PercentChangeIterator extends IndexIterator
+    
+    /**
+     * @constructor
+     * @param {ko.observable<Number>} startIndexingAt Observable for the index reference point
+     */
+    (data, startIndexingAt) ->
+        @startIndexingAt = startIndexingAt
+        options = {}
+        
+        super data, options
+    
+    
+    clone: ->
+        clone = super()
+        clone.startIndexingAt = @startIndexingAt
+        clone
+    
+    hasNext: ->
+        return super() if @data
+        false
+    
+    getNext: ->
+        nextValue = super()
+        referenceValue = @data[ @startIndexingAt() ]
+        
+        if referenceValue
+            nextValueY = (nextValue[1] / referenceValue[1]) * 100
+        else
+            nextValueY = NaN
+        nextValueX = nextValue[0]
+        
+        [nextValueX, nextValueY]

@@ -1,0 +1,9 @@
+fieldset
+    legend Index Values
+    span % change from&nbsp;
+    input(type="number", data-bind="value: startIndexingAt", min=0)
+    span(data-bind="if: startIndexingAt() % 10 === 1") st
+    span(data-bind="if: startIndexingAt() % 10 === 2") nd
+    span(data-bind="if: startIndexingAt() % 10 === 3") rd
+    span(data-bind="if: startIndexingAt() % 10 > 3 || startIndexingAt() % 10 === 0") th
+    span &nbsp;value

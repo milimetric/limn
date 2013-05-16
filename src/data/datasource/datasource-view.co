@@ -226,6 +226,7 @@ class exports.DataSourceView extends View
                         nodeType: 'tweaks',
                         children: [
                             {nodeType: 'smooth'},
+                            {nodeType: 'indexed'},
                             {nodeType: 'scaling'}
                         ]
                     }
